@@ -10,7 +10,7 @@ module type S = sig
   type iter
   (** Iterator type, used to modify an element in heap. *)
 
-  val emtpy : t
+  val empty : t
   (** [empty] returns an empty heap. *)
 
   val is_empty : t -> bool
@@ -39,9 +39,9 @@ module type S = sig
   (** [merge h1 h2] merges the two heaps [h1] and [h2] and
       returns the resulting heap. *)
 
-  val modify : t -> iter -> elt -> t
-  (** [modify h r v] changes the iterator [r]'s value
-      to [v] in heap [h] and returns the resulting 
-      heap. *)
+  val decrease_key : t -> iter -> elt -> t
+  (** [decrease_key h r v] changes the iterator [r]'s 
+      value to a smaller value [v] in heap [h] and returns 
+      the resulting heap. *)
 end
 (** Signature of mutable mergeable heaps. *)
