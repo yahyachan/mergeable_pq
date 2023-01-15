@@ -48,3 +48,56 @@ end
 
 
 (* Implements. *)
+module Pairing (M : Utils.Ord) : S with type elt = M.t = struct
+  type elt = M.t
+  type t =
+    | Nil
+    | Tree of elt ref * t ref * t list ref
+  type iter = t
+
+  let empty = Nil
+  let is_empty x = (x = Nil)
+  
+  let merge a b =
+    match a, b with
+    | Nil, b -> b
+    | a, Nil -> a
+    | Tree (x, fa, ca), Tree (y, fb, cb) ->
+        if compare !x !y < 0 then begin
+            fb := a; ca := b :: !ca; a
+        end else begin
+            fa := b; cb := a :: !cb; b
+        end
+
+  let push h v =
+    let np = Tree (ref v, ref Nil, ref []) in
+    let nh = merge np h in
+    (nh, np)
+  let rec build_aux res_h = function
+    | [] -> res_h
+    | x :: xs ->
+        let (nh, _) = push res_h x in
+        build_aux nh xs
+  let build = build_aux Nil
+
+  let top = function
+    | Nil -> None
+    | Tree (xr, _, _) -> Some (!xr)
+
+  let rec merge_list = function
+    | [] -> Nil
+    | [Tree (_, fa, _) as t] -> fa := Nil; t
+    | (Tree (_, fa, _) as a) :: (Tree (_, fb, _) as b) :: xs ->
+        fa := Nil; fb := Nil; merge (merge_list xs) (merge a b)
+    | _ -> assert false
+  let pop = function
+    | Nil -> None
+    | Tree (xr, _, cl) ->
+        Some (merge_list (!cl), !xr)
+  
+  let decrease_key h r v =
+    match r with
+    | Nil -> assert false
+    | Tree (x, f, _) ->
+      x := v; f := Nil; merge h r
+end

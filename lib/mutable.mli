@@ -45,3 +45,7 @@ module type S = sig
       the resulting heap. *)
 end
 (** Signature of mutable mergeable heaps. *)
+
+
+module Pairing (M : Utils.Ord) : (S with type elt = M.t)
+(** Pairing heap. *)

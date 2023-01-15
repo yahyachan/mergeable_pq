@@ -1,2 +1,3 @@
-(test
- (name mergeable_pq))
+(tests
+ (names test_mutable)
+ (libraries ounit2 mergeable_pq))
