@@ -19,18 +19,20 @@ module type S = sig
   val build : elt list -> t
   (** [build l] builds a new heap from the element list [l]. *)
 
-  val push : t -> elt -> iter
+  val push : t -> elt -> t * iter
   (** [push h e] pushes the element [e] into heap [h], and
-      returns the iterator of [e] in [h]. *)
+      returns the resulting heap as well as the iterator of 
+      [e] in [h]. *)
 
   val top : t -> elt option
   (** [top h] returns the least element [e] in form
       [Some e] if [h] is not empty, and returns [None]
       otherwise. *)
   
-  val pop : t -> elt option
+  val pop : t -> (t * elt) option
   (** [pop h] pops the least element [e] in heap [h] and
-      returns [Some e] if [h] is not empty. Otherwise, it
+      returns [Some (h', e)] where [h'] is the resulting
+      heap if [h] is not empty. Otherwise, it
       returns [None]. *)
   
   val merge : t -> t -> t
