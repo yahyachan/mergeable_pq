@@ -19,7 +19,7 @@
  (name mergeable_pq)
  (synopsis "Implementations of various mergeable heaps in OCaml.")
  (description "Implementations of various mergeable heaps in OCaml.")
- (depends ocaml dune)
+ (depends (ocaml (>= "4.08.0")) dune)
  (tags
   ("data structure" "priority queue")))
 
