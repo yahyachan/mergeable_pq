@@ -19,7 +19,7 @@ module type TEST = sig
 end
 
 module Heapsort (M : Mutable.S with type elt = int) : TEST = struct
-  let name = "test_heapsort"
+  let name = "heapsort"
   let bound = 1000000000
   let n = 500000
 
@@ -34,7 +34,7 @@ module Heapsort (M : Mutable.S with type elt = int) : TEST = struct
 end
 
 module Merge2 (M : Mutable.S with type elt = int) : TEST = struct
-  let name = "test_heapsort"
+  let name = "merge2"
   let bound = 1000000000
   let n = 500000
 
