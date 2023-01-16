@@ -50,54 +50,80 @@ end
 (* Implements. *)
 module Pairing (M : Utils.Ord) : S with type elt = M.t = struct
   type elt = M.t
-  type t =
-    | Nil
-    | Tree of elt ref * t ref * t list ref
-  type iter = t
+  type tree = { mutable value : elt;
+             mutable fa : t;
+             mutable lc : t;
+             mutable lb : t;
+             mutable rb : t }
+  and t = tree option
+  type iter = tree
 
-  let empty = Nil
-  let is_empty x = (x = Nil)
+  let empty = None
+  let is_empty x = (x = None)
   
   let merge a b =
     match a, b with
-    | Nil, b -> b
-    | a, Nil -> a
-    | Tree (x, fa, ca), Tree (y, fb, cb) ->
-        if compare !x !y < 0 then begin
-            fb := a; ca := b :: !ca; a
+    | None, b -> b
+    | a, None -> a
+    | Some o1, Some o2 ->
+        if compare o1.value o2.value < 0 then begin
+            o2.fa <- a;
+            Option.iter (fun x -> x.lb <- b) o1.lc;
+            o2.rb <- o1.lc;
+            o1.lc <- b;
+            a
         end else begin
-            fa := b; cb := a :: !cb; b
+            o1.fa <- b;
+            Option.iter (fun x -> x.lb <- a) o2.lc;
+            o1.rb <- o2.lc;
+            o2.lc <- a;
+            b
         end
 
   let push h v =
-    let np = Tree (ref v, ref Nil, ref []) in
+    let it = { value = v; fa = None; lc = None; rb = None; lb = None } in
+    let np = Some it in
     let nh = merge np h in
-    (nh, np)
+    (nh, it)
   let rec build_aux res_h = function
     | [] -> res_h
     | x :: xs ->
         let (nh, _) = push res_h x in
         build_aux nh xs
-  let build = build_aux Nil
+  let build = build_aux empty
 
-  let top = function
-    | Nil -> None
-    | Tree (xr, _, _) -> Some (!xr)
+  let top = Option.map (fun o -> o.value)
 
+  let reset x =
+    x.fa <- None;
+    x.lb <- None;
+    x.rb <- None
   let rec merge_list = function
-    | [] -> Nil
-    | [Tree (_, fa, _) as t] -> fa := Nil; t
-    | (Tree (_, fa, _) as a) :: (Tree (_, fb, _) as b) :: xs ->
-        fa := Nil; fb := Nil; merge (merge_list xs) (merge a b)
-    | _ -> assert false
+    | None -> None
+    | Some ({rb; _} as o1) as x ->
+      match rb with
+      | None -> x
+      | Some o2 as y ->
+        let next = o2.rb in
+        reset o1;
+        reset o2;
+        merge (merge_list next) (merge x y)
   let pop = function
-    | Nil -> None
-    | Tree (xr, _, cl) ->
-        Some (merge_list (!cl), !xr)
+    | None -> None
+    | Some {value; lc; _} ->
+      Some (merge_list lc, value)
   
-  let decrease_key h r v =
-    match r with
-    | Nil -> assert false
-    | Tree (x, f, _) ->
-      x := v; f := Nil; merge h r
+  let decrease_key h o v =
+    o.value <- v;
+    match o.fa with
+    | None -> Some o
+    | Some oo ->
+      if is_empty o.lb then
+        (oo.lc <- o.rb;
+        Option.iter (fun e -> e.lb <- None) o.rb)
+      else
+        (Option.iter (fun x -> x.rb <- o.rb) o.lb;
+         Option.iter (fun x -> x.lb <- o.lb) o.rb);
+      reset o;
+      merge h (Some o)
 end
