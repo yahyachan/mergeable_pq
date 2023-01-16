@@ -13,8 +13,6 @@ let heap_of_list (type t) (type ht)
   in
   aux h []
 
-type heap_int = (module Mutable.S with type elt = int)
-
 module type TEST = sig
   val name : string
   val test : 'a -> unit
@@ -52,15 +50,19 @@ end
 
 let gen_test (module T : TEST) =
   T.name >:: T.test
-let gen_suite (grp, (m : heap_int)) =
+
+module type Heap = functor (M : Utils.Ord) -> Mutable.S with type elt = M.t
+let gen_suite (grp, (m : (module Heap))) =
   ("test " ^ grp) >::: [
-    gen_test (module Heapsort(val m));
-    gen_test (module Merge2(val m))
+    gen_test (module Heapsort((val m)(Int)));
+    gen_test (module Merge2((val m)(Int)))
   ] |> run_test_tt_main
 
-let h_list : (string * heap_int) list =
+let h_list : (string * (module Heap)) list =
   let open Mutable in
-  [("pairing heap", (module Pairing(Int)))]
+  [
+    ("pairing heap", (module Pairing))
+  ]
 
 let _ =
   Random.init 114514;
