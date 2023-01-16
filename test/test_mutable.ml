@@ -48,6 +48,31 @@ module Merge2 (M : Mutable.S with type elt = int) : TEST = struct
                    (List.sort Int.compare a) (List.sort Int.compare b))
 end
 
+module Decrease_key (M : Mutable.S with type elt = int) : TEST = struct
+  let name = "decrease_key"
+  let bound = 1000000000
+  let n = 500000
+
+  let test _ =
+    let arr = Array.init n (fun _ -> Random.int bound) in
+    let h = ref M.empty in
+    let iters = Array.init n (fun i -> 
+      let (nh, it) = M.push !h arr.(i) in 
+      h := nh; it) in
+    for i = 1 to (n / 4) do
+      ignore i;
+      let p = Random.int n in
+      let v = arr.(p) in
+      if v <> 0 then
+        let nv = Random.int v in
+        arr.(p) <- nv;
+        h := M.decrease_key !h iters.(p) nv
+      else ()
+    done;
+    assert_equal (heap_of_list (module M) !h) (List.sort Int.compare @@ Array.to_list arr)
+end
+
+
 let gen_test (module T : TEST) =
   T.name >:: T.test
 
@@ -55,7 +80,8 @@ module type Heap = functor (M : Utils.Ord) -> Mutable.S with type elt = M.t
 let gen_suite (grp, (m : (module Heap))) =
   ("test " ^ grp) >::: [
     gen_test (module Heapsort((val m)(Int)));
-    gen_test (module Merge2((val m)(Int)))
+    gen_test (module Merge2((val m)(Int)));
+    gen_test (module Decrease_key((val m)(Int)))
   ] |> run_test_tt_main
 
 let h_list : (string * (module Heap)) list =
