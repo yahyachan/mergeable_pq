@@ -74,7 +74,8 @@ end
 
 
 let gen_test (module T : TEST) =
-  T.name >:: T.test
+  let open OUnitTest in
+  TestLabel (T.name, TestCase (Immediate, T.test))
 
 module type Heap = functor (M : Utils.Ord) -> Mutable.S with type elt = M.t
 let gen_suite (grp, (m : (module Heap))) =
@@ -87,7 +88,8 @@ let gen_suite (grp, (m : (module Heap))) =
 let h_list : (string * (module Heap)) list =
   let open Mutable in
   [
-    ("pairing heap", (module Pairing))
+    ("pairing heap", (module Pairing));
+    ("binomial heap", (module Binomial))
   ]
 
 let _ =

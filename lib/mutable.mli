@@ -49,3 +49,6 @@ end
 
 module Pairing (M : Utils.Ord) : (S with type elt = M.t)
 (** Pairing heap. *)
+
+module Binomial (M : Utils.Ord) : (S with type elt = M.t)
+(** Binomial heap. *)

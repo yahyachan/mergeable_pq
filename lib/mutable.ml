@@ -127,3 +127,99 @@ module Pairing (M : Utils.Ord) : S with type elt = M.t = struct
       reset o;
       merge h (Some o)
 end
+
+module Binomial (M : Utils.Ord) : S with type elt = M.t = struct
+  type elt = M.t
+  type tree = 
+  { mutable rank: int;
+    mutable value: elt;
+    mutable fa : tree option;
+    mutable children : tree list;
+    mutable pointer : tree ref }
+  type t = tree list * tree option
+  type iter = tree ref
+
+  let empty = ([], None)
+  let is_empty (x, _) = (x = [])
+
+  let rec recalc = function
+  | ([], res) -> res
+  | (x :: xs, None) -> recalc (xs, Some x)
+  | (x :: xs, Some y) when M.compare x.value y.value < 0 ->
+    recalc (xs, Some x)
+  | (_ :: xs, th) -> recalc (xs, th)
+
+  let merge_tree tree1 tree2 =
+    if M.compare tree1.value tree2.value < 0 then begin
+      tree1.rank <- tree1.rank + 1;
+      tree2.fa <- Some tree1;
+      tree1.children <- tree2 :: tree1.children;
+      tree1
+    end else begin
+      tree2.rank <- tree2.rank + 1;
+      tree1.fa <- Some tree2;
+      tree2.children <- tree1 :: tree2.children;
+      tree2
+    end
+  let rec merge_aux h1 h2 res =
+    match res with
+    | t1 :: t2 :: xs when t1.rank = t2.rank ->
+      merge_aux h1 h2 (merge_tree t1 t2 :: xs)
+    | _ ->
+      match h1, h2 with
+      | [], [] -> res
+      | x1 :: xs1, [] -> merge_aux xs1 [] (x1 :: res)
+      | [], x2 :: xs2 -> merge_aux [] xs2 (x2 :: res)
+      | x1 :: xs1, x2 :: xs2 ->
+        match Int.compare x1.rank x2.rank with
+        | 0 -> merge_aux xs1 xs2 (merge_tree x1 x2 :: res)
+        | v when v < 0 -> merge_aux xs1 h2 (x1 :: res)
+        | _ -> merge_aux h1 xs2 (x2 :: res)
+  let merge (h1, _) (h2, _) =
+    let th = List.rev @@ merge_aux h1 h2 [] in
+    (th, recalc (th, None))
+  let singleton v =
+    let rec ret = { rank = 0; value = v; fa = None; children = []; pointer = r }
+    and r = ref ret in
+    (ret, r)
+  let push h v =
+    let (th, r) = singleton v in
+    (merge ([th], None) h, r)
+  let push_simple h v =
+    let (ret, _) = push h v in ret
+  let build =
+    List.fold_left push_simple empty
+  let ( let+ ) o f = Option.map f o
+  let top (_, p) =
+    let+ {value; _} = p in value
+  let pop (l, p) =
+    let+ tr = p in
+    let nl = List.filter (fun t -> t.rank != tr.rank) l in
+    List.iter (fun t -> t.fa <- None) tr.children;
+    (merge (List.rev tr.children, None) (nl, None), tr.value)
+  let rec swim_up t =
+    match (!t).fa with
+    | None -> ()
+    | Some f when M.compare f.value (!t).value <= 0 -> ()
+    | Some f ->
+      let fv = f.value in
+      f.value <- (!t).value;
+      (!t).value <- fv;
+      let c = !t
+      and fp = f.pointer in
+      f.pointer <- c.pointer;
+      c.pointer <- fp;
+      f.pointer := f;
+      c.pointer := c;
+      swim_up t
+  let decrease_key (l, p) it v =
+    (!it).value <- v;
+    swim_up it;
+    let cpf ({value; _} as old) =
+      if M.compare v value < 0 then
+        !it
+      else
+        old
+    in
+    (l, Option.map cpf p)
+end
