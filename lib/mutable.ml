@@ -42,7 +42,7 @@ module type S = sig
       value to a smaller value [v] in heap [h] and returns 
       the resulting heap. *)
 end
-(** Signature of mutable mergeable heaps. *)
+(** Signature of mutable mergeable min-heaps. *)
 
 
 
