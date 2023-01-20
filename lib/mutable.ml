@@ -182,9 +182,20 @@ module Binomial (M : Utils.Ord) : S with type elt = M.t = struct
     let rec ret = { rank = 0; value = v; fa = None; children = []; pointer = r }
     and r = ref ret in
     (ret, r)
-  let push h v =
+  let rec push_aux = function
+  | x1 :: x2 :: xs when x1.rank = x2.rank ->
+    push_aux (merge_tree x1 x2 :: xs)
+  | ret -> ret
+  let recalc_small = function
+  | ([], _) -> assert false
+  | ((x :: _) as l, None) -> (l, Some x)
+  | ((x :: _) as l, Some y) when M.compare x.value y.value < 0 ->
+    (l, Some x)
+  | ret -> ret
+  let push (h, o) v =
     let (th, r) = singleton v in
-    (merge ([th], None) h, r)
+    let nl = push_aux (th :: h) in
+    (recalc_small (nl, o), r)
   let push_simple h v =
     let (ret, _) = push h v in ret
   let build =
